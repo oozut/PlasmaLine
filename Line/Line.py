@@ -17,7 +17,14 @@ class Lines:
 
         file = open(name_file,'r') # read the file
 
-        for line in file.readlines():
+        f = open(name_file, 'r')  # read the file
+        self.levels_obj = []  # the list for the objects
+        for line in f.readlines()[5:]:
+            list_line= line.split('|')
+            if not (len(list_line)== 1) and not list_line[0][0] == '-':
+                print(list_line)
+            else:
+                exit
 
 
 class Line:
@@ -31,3 +38,4 @@ class Line:
         """
         The initialisation for the Line
         """
+        print('a')

@@ -1,6 +1,3 @@
-import string
-
-
 class Levels:
     """
     Class for the Levels of a atomic species

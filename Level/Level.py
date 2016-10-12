@@ -1,3 +1,5 @@
+import re
+
 class Levels:
     """
     Class for the Levels of a atomic species
@@ -67,22 +69,20 @@ class Level:
         bad_characters = '[]()<>'  # type of characters founds in the NIST database
         level = level.translate(None, bad_characters)
         self.level = float(level)
-
-
-
-        self.configuration_high_detail = [] ## the high detail for the configuration
+        self.configuration_high_detail = []  # the high detail for the configuration
 
     def configuration_strip_down(self):
 
         list_config = self.configuration.split('.')
         new_config = []
         for config in list_config:
-            if(len(config)==2):
-                new_config.append([config[0:2],1])  # the new configuration provide information about the electronic
+            head = config.rstrip('1234567890')
+            if(len(config)==head):
+                new_config.append([head, 1])  # the new configuration provide information about the electronic
                 # level ('2p,3d,4f') in the first element of the list and the number of electrons in the electronic
                 # level.
             else:
-                new_config.append([config[0:2],config[2]])  # the new configuration provide information about the
+                new_config.append([head, config[len(head):]])  # the new configuration provide information about the
                 # electronic level ('2p,3d,4f') in the first element of the list and the number of electrons in the
                 # electronic level.
         self.configuration_high_detail = new_config

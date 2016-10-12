@@ -45,6 +45,72 @@ class Levels:
             else:
                 exit
 
+    def linesimport(self,Lines):
+
+        for line in Lines.lines_obj:
+            for level in self.levels_obj:
+                if(level.configuration == line.ConfLow and level.term == line.TermLow and level.J == line.JLow):
+                    level.add_transition_gain(line)
+                if (level.configuration == line.ConfUp and level.term == line.TermUp and level.J == line.JUp):
+                    level.add_transition_loss(line)
+
+
+    def grouping_procedure(self,function):
+        grouped_level = function(self.levels_obj)
+
+        self.grouped_levels = grouped_level
+
+    def grouping_method_1(self,all_levels):
+        '''
+        The grouping method 1 is the following:
+            The electronic level with the same chemical configuration are grouped together into on equivalent level.
+            Finally, the new level can be splitted if the energy between the maximum and the minimum is higher than 2%
+            difference.
+        :param all_levels: all the level
+        :return: the new chemical configuration with the fictitious levels calculated with the grouping procedure.
+        '''
+        new_grouped_level = []
+        working_levels = all_levels
+        for level in working_levels:  # the ground level is extracted before any reconfiguration
+            if(level.level == 0.):
+                new_grouped_level.append(FictitiousLevel(level.configuration,level.term,level.J,level.level))
+                working_levels.remove(level)  # I remove the ground level from the list
+                break
+
+        for level in working_levels:  # remove the ionisation state
+            if(level.term == 'Limit'):
+                working_levels.remove(level)
+
+        working_directory = {}
+        for level in working_levels:  # Creation of the dictionary of chemical configuration.
+            try:
+                working_directory[level.configuration].append(level)
+            except KeyError:
+                working_directory[level.configuration] = []
+                working_directory[level.configuration].append(level)
+
+        fine_grouped_levels = []  # The fine grouping for the difference of energy no more than 5%
+        for group_levels in working_directory.itervalues():
+            n_gr = []
+            for level, i in zip(group_levels, range(len(group_levels))):
+                if i == 0:
+                    l_gr = group_levels[0].level
+                    n_gr.append(level)
+                else:
+                    if (level.level - l_gr)/l_gr > 0.05:
+                        fine_grouped_levels.append(n_gr)
+                        n_gr = []
+                        n_gr.append(level)
+                    else:
+                        n_gr.append(level)
+            fine_grouped_levels.append(n_gr)
+
+        return fine_grouped_levels
+
+
+
+
+
 
 class Level:
     """
@@ -70,6 +136,8 @@ class Level:
         level = level.translate(None, bad_characters)
         self.level = float(level)
         self.configuration_high_detail = []  # the high detail for the configuration
+        self.transition_loss = []
+        self.transition_gain = []
 
     def configuration_strip_down(self):
 
@@ -86,3 +154,27 @@ class Level:
                 # electronic level ('2p,3d,4f') in the first element of the list and the number of electrons in the
                 # electronic level.
         self.configuration_high_detail = new_config
+
+    def add_transition_loss(self,line):
+        self.transition_loss.append(line)
+
+    def add_transition_gain(self,line):
+        self.transition_gain.append(line)
+
+
+class FictitiousLevel(Level):
+
+    def __init__(self,list_level,configuration = '', term = '', parity = '', level = '0.'):
+        Level.__init__(self,configuration, term, parity, level)
+        self.real_levels = list_level
+        self.weight = 0.
+
+
+    def calculate_weight(self):
+        for level in self.real_levels:
+            self.weight = 2*float(level.J)+1.
+
+    def calculate_level(self):
+        for level in self.real_levels:
+            self.level = (2*float(level.J) + 1)*level.level  # the calculation for the fictutious level of energy
+        self.level /= self.weight  # normalisation of the energy level
